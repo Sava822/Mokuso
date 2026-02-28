@@ -202,6 +202,7 @@ struct HistoryView: View {
                             .font(.system(size: isIPad ? 14 : 12, weight: .bold))
                             .foregroundStyle(Color.dojoTextTertiary)
                     }
+                    .accessibilityLabel("Previous month")
 
                     Text(monthYearString(selectedMonth))
                         .font(.system(size: isIPad ? 15 : 13, weight: .semibold, design: .serif))
@@ -217,6 +218,7 @@ struct HistoryView: View {
                             .font(.system(size: isIPad ? 14 : 12, weight: .bold))
                             .foregroundStyle(Color.dojoTextTertiary)
                     }
+                    .accessibilityLabel("Next month")
                 }
             }
 
@@ -312,6 +314,7 @@ struct HistoryView: View {
                     Image(systemName: "figure.martial.arts")
                         .font(.system(size: isIPad ? 36 : 28))
                         .foregroundStyle(Color.dojoMuted.opacity(0.5))
+                        .accessibilityHidden(true)
                     Text("No sessions yet")
                         .font(.system(size: isIPad ? 15 : 13, weight: .medium, design: .serif))
                         .foregroundStyle(Color.dojoTextTertiary)
@@ -355,6 +358,7 @@ struct HistoryView: View {
                     Image(systemName: "figure.martial.arts")
                         .font(.system(size: isIPad ? 16 : 13, weight: .medium))
                         .foregroundStyle(Color.emberGold.opacity(0.8))
+                        .accessibilityHidden(true)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
