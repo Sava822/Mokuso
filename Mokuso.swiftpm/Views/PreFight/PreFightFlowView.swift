@@ -979,17 +979,17 @@ struct PreFightFlowView: View {
                     } else {
                         Spacer()
 
-                        // Visualization text — fixed height so circle never shifts
+                        // Visualization text
                         Text(currentStage.text)
-                            .font(.dojoBody((isIPad ? 26 : 22) + intensity * (isIPad ? 8 : 6)))
+                            .font(.system(size: isIPad ? 26 : 20, weight: .medium, design: .serif))
                             .foregroundStyle(Color.white)
                             .multilineTextAlignment(.center)
-                            .lineSpacing(isIPad ? 12 : 9)
-                            .shadow(color: stageColor.opacity(intensity * 0.5), radius: intensity * 10)
+                            .lineSpacing(isIPad ? 10 : 8)
                             .opacity(rampTextOpacity)
                             .padding(.horizontal, isIPad ? AppSpacing.xxl : AppSpacing.lg)
                             .frame(height: isIPad ? 180 : 130, alignment: .center)
                             .accessibilityLabel(currentStage.text)
+                            .animation(.easeInOut(duration: 0.3), value: rampTextOpacity)
 
                         Spacer().frame(height: isIPad ? 48 : 32)
 
@@ -1670,11 +1670,10 @@ struct PreFightFlowView: View {
             await MainActor.run {
                 rampStep = index
                 holdProgress = 0
+                rampTextOpacity = 0
                 HapticManager.forIntensity(stage.intensity)
-                withAnimation(.easeIn(duration: 0.5)) {
+                withAnimation(.easeInOut(duration: 0.6)) {
                     rampTextOpacity = 1
-                }
-                withAnimation(.easeInOut(duration: 1.5)) {
                     rampIntensity = stage.intensity
                     rampColor = rampStageColor(stage)
                 }

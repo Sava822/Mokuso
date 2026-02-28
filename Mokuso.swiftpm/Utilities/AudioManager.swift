@@ -15,7 +15,7 @@ final class AudioManager {
     }
 
     private init() {
-        UserDefaults.standard.register(defaults: ["soundEnabled": true])
+        UserDefaults.standard.register(defaults: ["soundEnabled": false])
 
         format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
 

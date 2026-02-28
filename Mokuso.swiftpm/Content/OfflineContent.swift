@@ -51,7 +51,7 @@ enum OfflineContent {
         IntensityRampStage(
             text: "Fight hard, but with respect.\nDon't let your win slip away.\nFight until the very end.\nNever give up.",
             intensity: 0.95,
-            duration: 5.0,
+            duration: 6.0,
             colorName: "crimsonPulse"
         )
     ]

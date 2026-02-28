@@ -183,7 +183,12 @@ struct HistoryView: View {
     // MARK: - Calendar Section
 
     private var calendarSection: some View {
-        VStack(alignment: .leading, spacing: isIPad ? AppSpacing.lg : AppSpacing.md) {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+        let daysInMonth = daysForMonth(selectedMonth)
+        let offset = firstWeekdayOfMonth(selectedMonth)
+        let monthComps = calendar.dateComponents([.year, .month], from: selectedMonth)
+
+        return VStack(alignment: .leading, spacing: isIPad ? AppSpacing.lg : AppSpacing.md) {
             HStack {
                 Text("COMPETITION LOG")
                     .font(.system(size: isIPad ? 12 : 10, weight: .bold, design: .rounded))
@@ -194,13 +199,13 @@ struct HistoryView: View {
 
                 HStack(spacing: isIPad ? AppSpacing.lg : AppSpacing.md) {
                     Button {
-                        withAnimation(.spring(duration: 0.3)) {
-                            selectedMonth = calendar.date(byAdding: .month, value: -1, to: selectedMonth)!
-                        }
+                        selectedMonth = calendar.date(byAdding: .month, value: -1, to: selectedMonth)!
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: isIPad ? 14 : 12, weight: .bold))
                             .foregroundStyle(Color.dojoTextTertiary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .accessibilityLabel("Previous month")
 
@@ -210,19 +215,63 @@ struct HistoryView: View {
                         .frame(minWidth: isIPad ? 150 : 110)
 
                     Button {
-                        withAnimation(.spring(duration: 0.3)) {
-                            selectedMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth)!
-                        }
+                        selectedMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth)!
                     } label: {
                         Image(systemName: "chevron.right")
                             .font(.system(size: isIPad ? 14 : 12, weight: .bold))
                             .foregroundStyle(Color.dojoTextTertiary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .accessibilityLabel("Next month")
                 }
             }
 
-            calendarGrid
+            // Weekday header
+            LazyVGrid(columns: columns, spacing: 0) {
+                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: isIPad ? 11 : 9, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.dojoMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, isIPad ? AppSpacing.xs : 4)
+                }
+            }
+
+            // Day grid — single ForEach with unique IDs (negative for blanks, positive for days)
+            let blanks: [Int] = offset > 0 ? Array((-offset)...(-1)) : []
+            let cells: [Int] = blanks + Array(1...daysInMonth)
+
+            LazyVGrid(columns: columns, spacing: isIPad ? 6 : 4) {
+                ForEach(cells, id: \.self) { cell in
+                    if cell <= 0 {
+                        // Blank offset cell
+                        Color.clear
+                            .frame(height: isIPad ? 40 : 32)
+                    } else {
+                        let date = calendar.date(from: DateComponents(year: monthComps.year, month: monthComps.month, day: cell))!
+                        let isActive = activeDaysSet.contains(dayKey(date))
+                        let isToday = calendar.isDateInToday(date)
+
+                        ZStack {
+                            if isActive {
+                                Circle()
+                                    .fill(Color.emberGold.opacity(0.2))
+                                    .shadow(color: Color.emberGold.opacity(0.2), radius: 6)
+                            } else if isToday {
+                                Circle()
+                                    .stroke(Color.emberGold.opacity(0.5), lineWidth: isIPad ? 1.5 : 1)
+                            }
+
+                            Text("\(cell)")
+                                .font(.system(size: isIPad ? 15 : 13, weight: isActive ? .bold : .regular, design: .rounded))
+                                .foregroundStyle(isActive ? Color.emberLight : (isToday ? Color.emberGold : Color.dojoTextSecondary))
+                        }
+                        .frame(height: isIPad ? 40 : 32)
+                    }
+                }
+            }
+            .id(selectedMonth)
         }
         .padding(isIPad ? AppSpacing.xl : AppSpacing.lg)
         .background(
@@ -233,71 +282,6 @@ struct HistoryView: View {
             RoundedRectangle(cornerRadius: AppCornerRadius.xl, style: .continuous)
                 .stroke(Color.white.opacity(0.03), lineWidth: 1)
         )
-    }
-
-    private var calendarGrid: some View {
-        let daysInMonth = daysForMonth(selectedMonth)
-        let firstWeekday = firstWeekdayOfMonth(selectedMonth)
-        let totalCells = firstWeekday + daysInMonth
-        let rows = (totalCells + 6) / 7
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
-        let weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-        return VStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
-            // Weekday header
-            HStack(spacing: 0) {
-                ForEach(0..<7, id: \.self) { i in
-                    Text(weekdayLabels[i])
-                        .font(.system(size: isIPad ? 11 : 9, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.dojoMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, isIPad ? AppSpacing.xs : 4)
-                }
-            }
-
-            // Day rows
-            ForEach(0..<rows, id: \.self) { row in
-                HStack(spacing: 0) {
-                    ForEach(0..<7, id: \.self) { col in
-                        let index = row * 7 + col
-                        let day = index - firstWeekday + 1
-
-                        if day >= 1 && day <= daysInMonth {
-                            let comps = calendar.dateComponents([.year, .month], from: selectedMonth)
-                            let date = calendar.date(from: DateComponents(year: comps.year, month: comps.month, day: day))!
-                            let dateStr = formatter.string(from: date)
-                            let isActive = activeDaysSet.contains(dateStr)
-                            let isToday = calendar.isDateInToday(date)
-
-                            ZStack {
-                                if isActive {
-                                    Circle()
-                                        .fill(Color.emberGold.opacity(0.2))
-                                        .shadow(color: Color.emberGold.opacity(0.2), radius: 6)
-                                        .padding(isIPad ? 4 : 3)
-                                } else if isToday {
-                                    Circle()
-                                        .stroke(Color.emberGold.opacity(0.5), lineWidth: isIPad ? 1.5 : 1)
-                                        .padding(isIPad ? 4 : 3)
-                                }
-
-                                Text("\(day)")
-                                    .font(.system(size: isIPad ? 15 : 14, weight: isActive ? .bold : .regular, design: .rounded))
-                                    .foregroundStyle(isActive ? Color.emberLight : (isToday ? Color.emberGold : Color.dojoTextSecondary))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .aspectRatio(1, contentMode: .fit)
-                        } else {
-                            Color.clear
-                                .frame(maxWidth: .infinity)
-                                .aspectRatio(1, contentMode: .fit)
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Recent Activity
@@ -326,9 +310,9 @@ struct HistoryView: View {
                 .padding(.vertical, isIPad ? AppSpacing.xxl : AppSpacing.xl)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(logs.prefix(10).enumerated()), id: \.element.id) { index, log in
+                    ForEach(Array(logs.prefix(5).enumerated()), id: \.element.id) { index, log in
                         logRow(log)
-                        if index < min(logs.count, 10) - 1 {
+                        if index < min(logs.count, 5) - 1 {
                             Rectangle()
                                 .fill(Color.white.opacity(0.03))
                                 .frame(height: 1)
@@ -404,6 +388,12 @@ struct HistoryView: View {
         let weekday = calendar.component(.weekday, from: first)
         // Convert to Monday=0 based
         return (weekday + 5) % 7
+    }
+
+    private func dayKey(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
     }
 
     private func relativeDateString(_ date: Date) -> String {

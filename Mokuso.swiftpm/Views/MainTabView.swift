@@ -363,7 +363,7 @@ struct PreFightSettingsSheet: View {
     private var isIPad: Bool { horizontalSizeClass == .regular }
 
     @AppStorage("selectedPreFightGame") private var selectedGameRaw: String = PreFightGame.reactionTap.rawValue
-    @AppStorage("soundEnabled") private var soundEnabled: Bool = true
+    @AppStorage("soundEnabled") private var soundEnabled: Bool = false
 
     private var selectedGame: PreFightGame {
         PreFightGame(rawValue: selectedGameRaw) ?? .reactionTap
