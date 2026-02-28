@@ -22,30 +22,58 @@ struct MemoryTile: View {
 
     var body: some View {
         Button(action: action) {
-            RoundedRectangle(cornerRadius: AppCornerRadius.medium, style: .continuous)
-                .fill(tileColor)
+            RoundedRectangle(cornerRadius: isIPad ? 16 : 12, style: .continuous)
+                .fill(tileGradient)
                 .overlay(
-                    RoundedRectangle(cornerRadius: AppCornerRadius.medium, style: .continuous)
-                        .stroke(tileBorder, lineWidth: isHighlighted ? (isIPad ? 3 : 2) : 1)
+                    RoundedRectangle(cornerRadius: isIPad ? 16 : 12, style: .continuous)
+                        .stroke(tileBorder, lineWidth: isHighlighted ? (isIPad ? 2.5 : 2) : 1)
                 )
+                .shadow(color: tileShadow, radius: isHighlighted ? 12 : 0)
                 .aspectRatio(1, contentMode: .fit)
+                .scaleEffect(isHighlighted ? 1.08 : 1.0)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHighlighted)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Tile \(index + 1)")
         .accessibilityHint(isHighlighted ? "Highlighted" : "Tap to select")
     }
 
-    private var tileColor: Color {
-        if isWrong { return Color.crimsonPulse.opacity(0.4) }
-        if isHighlighted { return Color.focusIndigo.opacity(0.7) }
-        if isPlayerTap { return Color.focusIndigo.opacity(0.4) }
-        return Color.dojoElevated
+    private var tileGradient: some ShapeStyle {
+        if isWrong {
+            return AnyShapeStyle(
+                LinearGradient(colors: [Color.crimsonPulse.opacity(0.5), Color.crimsonPulse.opacity(0.3)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+        }
+        if isHighlighted {
+            return AnyShapeStyle(
+                LinearGradient(colors: [Color.focusIndigo.opacity(0.8), Color.focusIndigo.opacity(0.5)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+        }
+        if isPlayerTap {
+            return AnyShapeStyle(
+                LinearGradient(colors: [Color.focusIndigo.opacity(0.35), Color.focusIndigo.opacity(0.2)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+        }
+        return AnyShapeStyle(
+            LinearGradient(colors: [Color.dojoElevated, Color.dojoSurface],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        )
     }
 
     private var tileBorder: Color {
-        if isWrong { return Color.crimsonPulse }
-        if isHighlighted { return Color.focusIndigo }
+        if isWrong { return Color.crimsonPulse.opacity(0.8) }
+        if isHighlighted { return Color.focusIndigo.opacity(0.9) }
+        if isPlayerTap { return Color.focusIndigo.opacity(0.4) }
         return Color.white.opacity(0.06)
+    }
+
+    private var tileShadow: Color {
+        if isWrong { return Color.crimsonPulse.opacity(0.5) }
+        if isHighlighted { return Color.focusIndigo.opacity(0.6) }
+        return .clear
     }
 }
 
@@ -70,17 +98,23 @@ struct InlinePatternRecallGame: View {
 
     var body: some View {
         VStack(spacing: isIPad ? AppSpacing.lg : AppSpacing.md) {
-            HStack {
-                Text("Level \(level)")
-                    .font(.dojoCaption(isIPad ? 18 : 13))
-                    .foregroundStyle(Color.focusIndigo)
-                    .contentTransition(.numericText())
+            HStack(alignment: .center) {
+                HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
+                    Text("LVL")
+                        .font(.system(size: isIPad ? 11 : 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.focusIndigo.opacity(0.6))
+                        .tracking(1)
+                    Text("\(level)")
+                        .font(.system(size: isIPad ? 24 : 18, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.focusIndigo)
+                        .contentTransition(.numericText())
+                }
 
                 Spacer()
 
                 Text(stateText)
-                    .font(.dojoCaption(isIPad ? 18 : 13))
-                    .foregroundStyle(Color.dojoTextSecondary)
+                    .font(.system(size: isIPad ? 15 : 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(stateColor)
             }
 
             LazyVGrid(columns: gridColumns, spacing: gridSpacing) {
@@ -112,10 +146,19 @@ struct InlinePatternRecallGame: View {
 
     private var stateText: String {
         switch state {
-        case .showing: return "Watch carefully..."
-        case .playing: return "Your turn!"
+        case .showing: return "Watch..."
+        case .playing: return "Your turn"
         case .success: return "Correct!"
         case .failed: return "Try again"
+        }
+    }
+
+    private var stateColor: Color {
+        switch state {
+        case .showing: return .dojoTextTertiary
+        case .playing: return .dojoTextSecondary
+        case .success: return .softGreen
+        case .failed: return .crimsonPulse
         }
     }
 
@@ -123,8 +166,9 @@ struct InlinePatternRecallGame: View {
         HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
             ForEach(0..<sequence.count, id: \.self) { i in
                 Circle()
-                    .fill(i < playerSequence.count ? Color.focusIndigo : Color.dojoMuted)
-                    .frame(width: isIPad ? 11 : 8, height: isIPad ? 11 : 8)
+                    .fill(i < playerSequence.count ? Color.focusIndigo : Color.dojoMuted.opacity(0.4))
+                    .frame(width: isIPad ? 10 : 7, height: isIPad ? 10 : 7)
+                    .shadow(color: i < playerSequence.count ? Color.focusIndigo.opacity(0.4) : .clear, radius: 4)
             }
         }
         .accessibilityElement(children: .combine)
@@ -137,11 +181,13 @@ struct InlinePatternRecallGame: View {
         let expectedIndex = playerSequence.count
         if index == sequence[expectedIndex] {
             HapticManager.light()
+            AudioManager.shared.softTap()
             playerSequence.append(index)
 
             if playerSequence.count == sequence.count {
                 state = .success
                 HapticManager.success()
+                AudioManager.shared.correctTap()
                 Task {
                     try? await Task.sleep(for: .seconds(1))
                     await MainActor.run {
@@ -152,6 +198,7 @@ struct InlinePatternRecallGame: View {
             }
         } else {
             HapticManager.error()
+            AudioManager.shared.wrongBuzz()
             wrongTile = index
             state = .failed
             Task {
@@ -182,6 +229,7 @@ struct InlinePatternRecallGame: View {
                         highlightedTile = tile
                     }
                     HapticManager.light()
+                    AudioManager.shared.softTap()
                 }
                 try? await Task.sleep(for: .milliseconds(600))
                 await MainActor.run {
@@ -203,6 +251,8 @@ struct InlinePatternRecallGame: View {
 
 struct MemorySequenceGameView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isIPad: Bool { horizontalSizeClass == .regular }
     @State private var sequence: [Int] = []
     @State private var playerSequence: [Int] = []
     @State private var level = 1
@@ -212,33 +262,71 @@ struct MemorySequenceGameView: View {
     @State private var wrongTile: Int? = nil
     @State private var showTask: Task<Void, Never>?
 
-    private let tileSize: CGFloat = 80
-    private let gridSpacing: CGFloat = 10
-    private let gridColumns: [GridItem] = Array(
-        repeating: GridItem(.fixed(80), spacing: 10),
-        count: 3
-    )
+    private var tileSize: CGFloat { isIPad ? 100 : 80 }
+    private var gridSpacing: CGFloat { isIPad ? 14 : 10 }
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.fixed(tileSize), spacing: gridSpacing), count: 3)
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                AppGradientBackground(accentColor: .focusIndigo)
+                Color.dojoBlack.ignoresSafeArea()
 
-                VStack(spacing: AppSpacing.lg) {
-                    HStack {
+                RadialGradient(
+                    colors: [Color.focusIndigo.opacity(0.08), Color.clear],
+                    center: .center,
+                    startRadius: 10,
+                    endRadius: isIPad ? 400 : 250
+                )
+                .ignoresSafeArea()
+
+                DojoGrainOverlay()
+
+                VStack(spacing: isIPad ? AppSpacing.xl : AppSpacing.lg) {
+                    // Header
+                    HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                            Text("Level \(level)")
-                                .font(.dojoHeading())
-                                .foregroundStyle(Color.focusIndigo)
-                                .contentTransition(.numericText())
+                            HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
+                                Text("LEVEL")
+                                    .font(.system(size: isIPad ? 12 : 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.focusIndigo.opacity(0.6))
+                                    .tracking(2)
+                                Text("\(level)")
+                                    .font(.system(size: isIPad ? 28 : 22, weight: .black, design: .rounded))
+                                    .foregroundStyle(Color.focusIndigo)
+                                    .contentTransition(.numericText())
+                            }
                             Text(stateText)
-                                .font(.dojoCaption())
-                                .foregroundStyle(Color.dojoTextSecondary)
+                                .font(.system(size: isIPad ? 14 : 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(standaloneStateColor)
                         }
                         Spacer()
-                    }
-                    .padding(.horizontal, AppSpacing.md)
 
+                        if let best = bestLevel {
+                            VStack(alignment: .trailing, spacing: 2) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "trophy.fill")
+                                        .font(.system(size: isIPad ? 12 : 10))
+                                        .foregroundStyle(Color.emberGold)
+                                    Text("BEST")
+                                        .font(.system(size: isIPad ? 10 : 8, weight: .bold, design: .rounded))
+                                        .foregroundStyle(Color.emberGold.opacity(0.6))
+                                        .tracking(1)
+                                }
+                                Text("\(best)")
+                                    .font(.system(size: isIPad ? 22 : 18, weight: .black, design: .rounded))
+                                    .foregroundStyle(Color.emberGold)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("Best level: \(best)")
+                        }
+                    }
+                    .padding(.horizontal, isIPad ? AppSpacing.xl : AppSpacing.lg)
+
+                    Spacer()
+
+                    // Grid
                     LazyVGrid(columns: gridColumns, spacing: gridSpacing) {
                         ForEach(0..<9, id: \.self) { index in
                             MemoryTile(
@@ -255,35 +343,34 @@ struct MemorySequenceGameView: View {
                     }
                     .fixedSize()
 
-                    progressDots
-                        .opacity(state == .playing ? 1 : 0)
+                    // Progress dots
+                    standaloneProgressDots
+                        .opacity(state == .playing ? 1 : 0.3)
 
                     Spacer()
-
-                    if let best = bestLevel {
-                        HStack(spacing: AppSpacing.xs) {
-                            Image(systemName: "trophy.fill")
-                                .foregroundStyle(Color.emberGold)
-                            Text("Best: Level \(best)")
-                                .font(.dojoCaption())
-                                .foregroundStyle(Color.dojoTextSecondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Best level: \(best)")
-                    }
                 }
-                .padding(.vertical, AppSpacing.lg)
+                .padding(.vertical, isIPad ? AppSpacing.xl : AppSpacing.lg)
             }
-            .navigationTitle("Pattern Recall")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("PATTERN RECALL")
+                        .font(.system(size: isIPad ? 14 : 12, weight: .bold, design: .serif))
+                        .foregroundStyle(Color.dojoTextSecondary)
+                        .tracking(isIPad ? 4 : 2)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .font(.system(size: isIPad ? 16 : 14, weight: .semibold))
                         .foregroundStyle(Color.emberGold)
                         .accessibilityLabel("Close game")
                 }
             }
+            .toolbarBackground(Color.dojoBlack, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .preferredColorScheme(.dark)
         .task {
             bestLevel = loadBestLevel()
             startNewRound()
@@ -302,12 +389,22 @@ struct MemorySequenceGameView: View {
         }
     }
 
-    private var progressDots: some View {
-        HStack(spacing: AppSpacing.xs) {
+    private var standaloneStateColor: Color {
+        switch state {
+        case .showing: return .dojoTextTertiary
+        case .playing: return .dojoTextSecondary
+        case .success: return .softGreen
+        case .failed: return .crimsonPulse
+        }
+    }
+
+    private var standaloneProgressDots: some View {
+        HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
             ForEach(0..<sequence.count, id: \.self) { i in
                 Circle()
-                    .fill(i < playerSequence.count ? Color.focusIndigo : Color.dojoMuted)
-                    .frame(width: 8, height: 8)
+                    .fill(i < playerSequence.count ? Color.focusIndigo : Color.dojoMuted.opacity(0.3))
+                    .frame(width: isIPad ? 10 : 8, height: isIPad ? 10 : 8)
+                    .shadow(color: i < playerSequence.count ? Color.focusIndigo.opacity(0.5) : .clear, radius: 4)
             }
         }
         .accessibilityElement(children: .combine)
@@ -320,11 +417,13 @@ struct MemorySequenceGameView: View {
         let expectedIndex = playerSequence.count
         if index == sequence[expectedIndex] {
             HapticManager.light()
+            AudioManager.shared.softTap()
             playerSequence.append(index)
 
             if playerSequence.count == sequence.count {
                 state = .success
                 HapticManager.success()
+                AudioManager.shared.correctTap()
 
                 if let best = bestLevel {
                     if level > best {
@@ -346,6 +445,7 @@ struct MemorySequenceGameView: View {
             }
         } else {
             HapticManager.error()
+            AudioManager.shared.wrongBuzz()
             wrongTile = index
             state = .failed
             Task {
@@ -376,6 +476,7 @@ struct MemorySequenceGameView: View {
                         highlightedTile = tile
                     }
                     HapticManager.light()
+                    AudioManager.shared.softTap()
                 }
                 try? await Task.sleep(for: .milliseconds(600))
                 await MainActor.run {

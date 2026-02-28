@@ -13,34 +13,53 @@ struct NumberTile: View {
     var body: some View {
         Button(action: action) {
             Text("\(number)")
-                .font(.system(size: isIPad ? 26 : 18, weight: .bold, design: .rounded))
-                .foregroundStyle(isTapped ? Color.dojoTextTertiary : Color.dojoTextPrimary)
+                .font(.system(size: isIPad ? 24 : 17, weight: .bold, design: .rounded))
+                .foregroundStyle(isTapped ? Color.dojoMuted.opacity(0.3) : Color.dojoTextPrimary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: AppCornerRadius.small, style: .continuous)
-                        .fill(tileColor)
+                    RoundedRectangle(cornerRadius: isIPad ? 12 : 10, style: .continuous)
+                        .fill(tileGradient)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: AppCornerRadius.small, style: .continuous)
-                        .stroke(tileBorder, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: isIPad ? 12 : 10, style: .continuous)
+                        .stroke(tileBorder, lineWidth: isWrong ? 1.5 : 1)
                 )
+                .shadow(color: tileShadow, radius: isWrong ? 8 : 0)
         }
         .buttonStyle(.plain)
+        .scaleEffect(isTapped ? 0.92 : 1.0)
+        .opacity(isTapped ? 0.4 : 1.0)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isTapped)
         .accessibilityLabel("Number \(number)")
         .accessibilityHint(isTapped ? "Already tapped" : "Tap to select")
         .disabled(isTapped)
     }
 
-    private var tileColor: Color {
-        if isWrong { return Color.crimsonPulse.opacity(0.3) }
-        if isTapped { return Color.dojoBlack.opacity(0.5) }
-        return Color.dojoElevated
+    private var tileGradient: some ShapeStyle {
+        if isWrong {
+            return AnyShapeStyle(
+                LinearGradient(colors: [Color.crimsonPulse.opacity(0.4), Color.crimsonPulse.opacity(0.2)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+        }
+        if isTapped {
+            return AnyShapeStyle(Color.dojoBlack.opacity(0.3))
+        }
+        return AnyShapeStyle(
+            LinearGradient(colors: [Color.dojoElevated, Color.dojoSurface],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        )
     }
 
     private var tileBorder: Color {
-        if isWrong { return Color.crimsonPulse.opacity(0.6) }
+        if isWrong { return Color.crimsonPulse.opacity(0.7) }
         if isTapped { return Color.clear }
         return Color.white.opacity(0.06)
+    }
+
+    private var tileShadow: Color {
+        if isWrong { return Color.crimsonPulse.opacity(0.4) }
+        return .clear
     }
 }
 
@@ -61,23 +80,33 @@ struct InlineNumberOrderGame: View {
 
     var body: some View {
         VStack(spacing: isIPad ? AppSpacing.md : AppSpacing.sm) {
-            if completions > 0 {
-                HStack(spacing: AppSpacing.xs) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: isIPad ? 18 : 14))
-                        .foregroundStyle(Color.softGreen)
-                    Text("Completed \(completions)×")
-                        .font(.dojoCaption(isIPad ? 16 : 13))
-                        .foregroundStyle(Color.dojoTextSecondary)
+            HStack(alignment: .center) {
+                HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
+                    Text("NEXT")
+                        .font(.system(size: isIPad ? 11 : 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.focusIndigo.opacity(0.6))
+                        .tracking(1)
+                    Text("\(nextNumber)")
+                        .font(.system(size: isIPad ? 24 : 18, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.focusIndigo)
+                        .contentTransition(.numericText())
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Completed \(completions) times")
-            }
 
-            Text("Next: \(nextNumber)")
-                .font(.dojoCaption(isIPad ? 18 : 13))
-                .foregroundStyle(Color.focusIndigo)
-                .contentTransition(.numericText())
+                Spacer()
+
+                if completions > 0 {
+                    HStack(spacing: AppSpacing.xs) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: isIPad ? 14 : 11))
+                            .foregroundStyle(Color.softGreen)
+                        Text("\(completions)×")
+                            .font(.system(size: isIPad ? 16 : 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.softGreen)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Completed \(completions) times")
+                }
+            }
 
             LazyVGrid(columns: gridColumns, spacing: isIPad ? 10 : 6) {
                 ForEach(numbers, id: \.self) { number in
@@ -100,16 +129,19 @@ struct InlineNumberOrderGame: View {
     private func handleTap(_ number: Int) {
         if number == nextNumber {
             HapticManager.light()
+            AudioManager.shared.softTap()
             withAnimation(.spring(duration: 0.2)) {
                 tappedNumbers.insert(number)
                 nextNumber += 1
             }
             if nextNumber > 25 {
+                AudioManager.shared.correctTap()
                 completions += 1
                 resetGame()
             }
         } else {
             HapticManager.error()
+            AudioManager.shared.wrongBuzz()
             wrongTap = number
             Task {
                 try? await Task.sleep(for: .milliseconds(300))
@@ -133,6 +165,8 @@ struct InlineNumberOrderGame: View {
 
 struct NumberOrderGameView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isIPad: Bool { horizontalSizeClass == .regular }
     @State private var numbers: [Int] = []
     @State private var nextNumber = 1
     @State private var wrongTap: Int? = nil
@@ -143,30 +177,83 @@ struct NumberOrderGameView: View {
     @State private var gameComplete = false
     @State private var timer: Timer?
 
-    private let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: isIPad ? 10 : 8), count: 5)
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                AppGradientBackground(accentColor: .focusIndigo)
+                Color.dojoBlack.ignoresSafeArea()
 
-                VStack(spacing: AppSpacing.lg) {
-                    HStack {
+                RadialGradient(
+                    colors: [Color.focusIndigo.opacity(0.08), Color.clear],
+                    center: .center,
+                    startRadius: 10,
+                    endRadius: isIPad ? 400 : 250
+                )
+                .ignoresSafeArea()
+
+                DojoGrainOverlay()
+
+                VStack(spacing: isIPad ? AppSpacing.xl : AppSpacing.lg) {
+                    // Header
+                    HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                            Text("Next: \(nextNumber)")
-                                .font(.dojoHeading())
-                                .foregroundStyle(Color.focusIndigo)
-                                .contentTransition(.numericText())
-                        }
-                        Spacer()
-                        Text(timeString(elapsedTime))
-                            .font(.dojoMono(20))
-                            .foregroundStyle(Color.dojoTextSecondary)
-                            .monospacedDigit()
-                    }
-                    .padding(.horizontal, AppSpacing.md)
+                            HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
+                                Text("NEXT")
+                                    .font(.system(size: isIPad ? 12 : 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.focusIndigo.opacity(0.6))
+                                    .tracking(2)
+                                Text("\(nextNumber)")
+                                    .font(.system(size: isIPad ? 28 : 22, weight: .black, design: .rounded))
+                                    .foregroundStyle(Color.focusIndigo)
+                                    .contentTransition(.numericText())
+                            }
 
-                    LazyVGrid(columns: gridColumns, spacing: 8) {
+                            // Progress bar
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                        .fill(Color.dojoSurface)
+                                        .frame(height: isIPad ? 4 : 3)
+                                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                        .fill(
+                                            LinearGradient(colors: [Color.focusIndigo, Color.calmTeal],
+                                                           startPoint: .leading, endPoint: .trailing)
+                                        )
+                                        .frame(width: geo.size.width * CGFloat(tappedNumbers.count) / 25.0, height: isIPad ? 4 : 3)
+                                        .animation(.spring(response: 0.3), value: tappedNumbers.count)
+                                }
+                            }
+                            .frame(height: isIPad ? 4 : 3)
+                        }
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(timeString(elapsedTime))
+                                .font(.system(size: isIPad ? 22 : 18, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color.dojoTextSecondary)
+                                .monospacedDigit()
+                            if let best = bestTime {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "trophy.fill")
+                                        .font(.system(size: isIPad ? 10 : 8))
+                                        .foregroundStyle(Color.emberGold)
+                                    Text(timeString(best))
+                                        .font(.system(size: isIPad ? 12 : 10, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(Color.emberGold.opacity(0.7))
+                                }
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Best time: \(timeString(best))")
+                            }
+                        }
+                    }
+                    .padding(.horizontal, isIPad ? AppSpacing.xl : AppSpacing.lg)
+
+                    // Grid
+                    LazyVGrid(columns: gridColumns, spacing: isIPad ? 10 : 8) {
                         ForEach(numbers, id: \.self) { number in
                             NumberTile(
                                 number: number,
@@ -178,38 +265,36 @@ struct NumberOrderGameView: View {
                             .aspectRatio(1, contentMode: .fit)
                         }
                     }
-                    .padding(.horizontal, AppSpacing.md)
+                    .padding(.horizontal, isIPad ? AppSpacing.xl : AppSpacing.lg)
 
                     Spacer()
-
-                    if let best = bestTime {
-                        HStack(spacing: AppSpacing.xs) {
-                            Image(systemName: "trophy.fill")
-                                .foregroundStyle(Color.emberGold)
-                            Text("Best: \(timeString(best))")
-                                .font(.dojoCaption())
-                                .foregroundStyle(Color.dojoTextSecondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Best time: \(timeString(best))")
-                    }
                 }
-                .padding(.vertical, AppSpacing.lg)
+                .padding(.vertical, isIPad ? AppSpacing.xl : AppSpacing.lg)
 
                 if gameComplete {
                     completionOverlay
                 }
             }
-            .navigationTitle("Number Order")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("NUMBER ORDER")
+                        .font(.system(size: isIPad ? 14 : 12, weight: .bold, design: .serif))
+                        .foregroundStyle(Color.dojoTextSecondary)
+                        .tracking(isIPad ? 4 : 2)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .font(.system(size: isIPad ? 16 : 14, weight: .semibold))
                         .foregroundStyle(Color.emberGold)
                         .accessibilityLabel("Close game")
                 }
             }
+            .toolbarBackground(Color.dojoBlack, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .preferredColorScheme(.dark)
         .task {
             bestTime = loadBestTime()
             shuffleNumbers()
@@ -217,37 +302,52 @@ struct NumberOrderGameView: View {
     }
 
     private var completionOverlay: some View {
-        VStack(spacing: AppSpacing.md) {
+        VStack(spacing: isIPad ? AppSpacing.lg : AppSpacing.md) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 56, weight: .bold))
+                .font(.system(size: isIPad ? 64 : 52, weight: .bold))
                 .foregroundStyle(Color.softGreen)
-                .appGlow(.softGreen, radius: 30)
+                .shadow(color: Color.softGreen.opacity(0.4), radius: 20)
 
             Text(timeString(elapsedTime))
-                .font(.dojoTitle(40))
+                .font(.system(size: isIPad ? 48 : 40, weight: .black, design: .monospaced))
                 .foregroundStyle(Color.dojoTextPrimary)
 
             if let best = bestTime, elapsedTime <= best {
-                Text("New Best!")
-                    .font(.dojoHeading())
+                Text("NEW BEST")
+                    .font(.system(size: isIPad ? 14 : 12, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.emberGold)
+                    .tracking(3)
             }
 
             Button {
                 gameComplete = false
                 resetGame()
             } label: {
-                Text("Play Again")
-                    .font(.dojoBody())
+                Text("PLAY AGAIN")
+                    .font(.system(size: isIPad ? 16 : 14, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.dojoBlack)
-                    .padding(.horizontal, AppSpacing.xl)
-                    .padding(.vertical, AppSpacing.sm)
-                    .background(Color.focusIndigo, in: Capsule())
+                    .tracking(2)
+                    .padding(.horizontal, isIPad ? AppSpacing.xxl : AppSpacing.xl)
+                    .padding(.vertical, isIPad ? AppSpacing.md : AppSpacing.sm)
+                    .background(
+                        Capsule()
+                            .fill(
+                                LinearGradient(colors: [Color.focusIndigo, Color.calmTeal],
+                                               startPoint: .leading, endPoint: .trailing)
+                            )
+                    )
             }
             .accessibilityLabel("Play again")
         }
-        .padding(AppSpacing.xxl)
-        .dojoCard()
+        .padding(isIPad ? AppSpacing.xxl : AppSpacing.xl)
+        .background(
+            RoundedRectangle(cornerRadius: AppCornerRadius.xl, style: .continuous)
+                .fill(Color.dojoSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppCornerRadius.xl, style: .continuous)
+                .stroke(Color.white.opacity(0.04), lineWidth: 1)
+        )
         .transition(.scale.combined(with: .opacity))
     }
 
@@ -259,6 +359,7 @@ struct NumberOrderGameView: View {
 
         if number == nextNumber {
             HapticManager.light()
+            AudioManager.shared.softTap()
             withAnimation(.spring(duration: 0.2)) {
                 tappedNumbers.insert(number)
                 nextNumber += 1
@@ -268,6 +369,7 @@ struct NumberOrderGameView: View {
             }
         } else {
             HapticManager.error()
+            AudioManager.shared.wrongBuzz()
             wrongTap = number
             Task {
                 try? await Task.sleep(for: .milliseconds(300))
@@ -289,6 +391,7 @@ struct NumberOrderGameView: View {
         timer = nil
         isRunning = false
         HapticManager.success()
+        AudioManager.shared.successChime()
 
         if let best = bestTime {
             if elapsedTime < best {

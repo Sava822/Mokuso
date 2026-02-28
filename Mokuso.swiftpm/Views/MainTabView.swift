@@ -12,6 +12,7 @@ struct MainTabView: View {
     @State private var showPreFightFlow = false
     @State private var showSettings = false
     @State private var showWhyItWorks = false
+    @State private var showHistory = false
     @State private var breathePulse = false
     @State private var glowPulse = false
 
@@ -67,16 +68,31 @@ struct MainTabView: View {
                     .staggeredFadeIn(delay: 0.1)
                     .padding(.top, AppSpacing.md)
 
-                // Personal statement
-                Text("Before every judo match, my hands shake. This is how I learned to turn fear into focus.")
-                    .font(.system(size: isIPad ? 17 : 13, weight: .regular, design: .serif))
-                    .italic()
-                    .foregroundStyle(Color.dojoTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(isIPad ? 6 : 4)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, AppSpacing.lg)
+                // Decorative accent line under title
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.clear, Color.emberGold.opacity(0.4), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: isIPad ? 200 : 120, height: 1)
                     .padding(.top, isIPad ? AppSpacing.lg : AppSpacing.md)
+                    .staggeredFadeIn(delay: 0.12)
+
+                Spacer()
+
+                // Personal statement — equidistant between title and button
+                Text("\"Before every judo match, my hands shake.\nThis is how I learned to turn fear into focus.\"")
+                    .font(.system(size: isIPad ? 24 : 17, weight: .medium, design: .serif))
+                    .italic()
+                    .foregroundStyle(Color.emberLight)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(isIPad ? 8 : 6)
+                    .shadow(color: Color.emberGold.opacity(0.35), radius: 12)
+                    .frame(maxWidth: isIPad ? 520 : .infinity)
+                    .padding(.horizontal, isIPad ? AppSpacing.xxl : AppSpacing.xl)
                     .staggeredFadeIn(delay: 0.15)
 
                 Spacer()
@@ -90,7 +106,7 @@ struct MainTabView: View {
                 // Static flow order indicator
                 flowIndicator
                     .staggeredFadeIn(delay: 0.3)
-                    .padding(.bottom, AppSpacing.xxl)
+                    .padding(.bottom, isIPad ? AppSpacing.xxl : AppSpacing.xl)
             }
         }
         .task {
@@ -110,6 +126,9 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $showWhyItWorks) {
             WhyItWorksView()
         }
+        .fullScreenCover(isPresented: $showHistory) {
+            HistoryView()
+        }
     }
 
     // MARK: - Top Bar
@@ -117,6 +136,18 @@ struct MainTabView: View {
     private var topBar: some View {
         HStack {
             Spacer()
+
+            Button {
+                HapticManager.light()
+                showHistory = true
+            } label: {
+                Image(systemName: "chart.bar.fill")
+                    .font(isIPad ? .title : .title2)
+                    .foregroundStyle(Color.dojoTextTertiary)
+                    .frame(width: isIPad ? 52 : 44, height: isIPad ? 52 : 44)
+            }
+            .accessibilityLabel("Progress")
+            .accessibilityHint("View your training history and stats")
 
             Button {
                 HapticManager.light()
@@ -147,17 +178,17 @@ struct MainTabView: View {
     // MARK: - Title Block
 
     private var titleBlock: some View {
-        VStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
-            Text("Mokuso")
-                .font(.dojoTitle(isIPad ? 56 : 34))
+        VStack(spacing: isIPad ? AppSpacing.md : AppSpacing.sm) {
+            Text("MOKUSO")
+                .font(.system(size: isIPad ? 60 : 38, weight: .black, design: .serif))
                 .foregroundStyle(Color.dojoTextPrimary)
-                .tracking(-0.5)
+                .tracking(isIPad ? 12 : 6)
                 .shimmer(.emberGold)
 
-            Text("Pre-Fight Mental Ritual")
-                .font(.dojoCaption(isIPad ? 20 : 14))
-                .foregroundStyle(Color.emberGold)
-                .tracking(isIPad ? 4 : 1.5)
+            Text("PRE-FIGHT MENTAL RITUAL")
+                .font(.system(size: isIPad ? 16 : 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.emberGold.opacity(0.8))
+                .tracking(isIPad ? 8 : 4)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Mokuso. Pre-fight mental ritual.")
@@ -214,21 +245,31 @@ struct MainTabView: View {
         HStack(spacing: 0) {
             ForEach(Array(RitualPhase.allCases.enumerated()), id: \.element.id) { index, phase in
                 if index > 0 {
-                    // Connector dash
                     Rectangle()
-                        .fill(Color.dojoMuted.opacity(0.3))
-                        .frame(width: isIPad ? 44 : 28, height: isIPad ? 2 : 1.5)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    RitualPhase.allCases[index - 1].color.opacity(0.3),
+                                    phase.color.opacity(0.3)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: isIPad ? 40 : 24, height: isIPad ? 1.5 : 1)
                         .padding(.horizontal, isIPad ? AppSpacing.sm : AppSpacing.xs)
                 }
 
-                HStack(spacing: isIPad ? 8 : 6) {
+                HStack(spacing: isIPad ? 8 : 5) {
                     Circle()
                         .fill(phase.color)
-                        .frame(width: isIPad ? 11 : 8, height: isIPad ? 11 : 8)
+                        .frame(width: isIPad ? 8 : 6, height: isIPad ? 8 : 6)
+                        .shadow(color: phase.color.opacity(0.5), radius: 4)
 
-                    Text(phase.shortName)
-                        .font(.dojoCaption(isIPad ? 16 : 13))
-                        .foregroundStyle(Color.dojoTextSecondary)
+                    Text(phase.shortName.uppercased())
+                        .font(.system(size: isIPad ? 13 : 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.dojoTextTertiary)
+                        .tracking(isIPad ? 2 : 1)
                 }
             }
         }
@@ -239,51 +280,67 @@ struct MainTabView: View {
     // MARK: - Start Button
 
     private var startButton: some View {
-        let outerSize: CGFloat = isIPad ? 400 : 260
-        let innerSize: CGFloat = isIPad ? 378 : 244
+        let outerSize: CGFloat = isIPad ? 380 : 240
+        let innerSize: CGFloat = isIPad ? 356 : 222
         return Button {
             HapticManager.heavy()
+            AudioManager.shared.startRitual()
             showPreFightFlow = true
         } label: {
             ZStack {
+                // Ambient glow behind button
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.emberGold.opacity(0.12), Color.clear],
+                            center: .center,
+                            startRadius: 10,
+                            endRadius: outerSize * 0.8
+                        )
+                    )
+                    .frame(width: outerSize * 1.6, height: outerSize * 1.6)
+                    .scaleEffect(breathePulse ? 1.1 : 0.9)
+
                 // Outer breathing octagon
                 OctagonShape()
                     .stroke(
                         LinearGradient(
-                            colors: [Color.emberGold, Color.emberLight],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            colors: [Color.emberLight, Color.emberGold.opacity(0.6)],
+                            startPoint: .top,
+                            endPoint: .bottom
                         ),
-                        lineWidth: isIPad ? 4 : 3
+                        lineWidth: isIPad ? 3 : 2
                     )
                     .frame(width: outerSize, height: outerSize)
-                    .scaleEffect(breathePulse ? 1.06 : 0.96)
+                    .scaleEffect(breathePulse ? 1.05 : 0.97)
 
                 // Inner fill
                 OctagonShape()
                     .fill(
                         LinearGradient(
-                            colors: [Color.emberGold, Color.emberGold.opacity(0.85)],
+                            colors: [Color.emberLight, Color.emberGold],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: innerSize, height: innerSize)
+                    .shadow(color: Color.emberGold.opacity(0.4), radius: 30)
 
                 // Content
                 VStack(spacing: isIPad ? AppSpacing.md : AppSpacing.sm) {
                     Image(systemName: "trophy.fill")
-                        .font(.system(size: isIPad ? 72 : 44, weight: .bold))
-                        .foregroundStyle(Color.dojoBlack)
+                        .font(.system(size: isIPad ? 64 : 40, weight: .bold))
+                        .foregroundStyle(Color.dojoBlack.opacity(0.85))
 
                     Text("START")
-                        .font(.system(size: isIPad ? 40 : 26, weight: .black, design: .rounded))
+                        .font(.system(size: isIPad ? 36 : 24, weight: .black, design: .serif))
                         .foregroundStyle(Color.dojoBlack)
-                        .tracking(isIPad ? 10 : 5)
+                        .tracking(isIPad ? 12 : 6)
 
-                    Text("3 min")
-                        .font(.dojoCaption(isIPad ? 20 : 14))
-                        .foregroundStyle(Color.dojoBlack.opacity(0.7))
+                    Text("3 min ritual")
+                        .font(.system(size: isIPad ? 16 : 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.dojoBlack.opacity(0.55))
+                        .tracking(isIPad ? 2 : 1)
                 }
             }
         }
@@ -324,6 +381,16 @@ struct PreFightSettingsSheet: View {
             ZStack {
                 Color.dojoBlack.ignoresSafeArea()
 
+                RadialGradient(
+                    colors: [Color.focusIndigo.opacity(0.06), Color.clear],
+                    center: .top,
+                    startRadius: 10,
+                    endRadius: isIPad ? 500 : 300
+                )
+                .ignoresSafeArea()
+
+                DojoGrainOverlay()
+
                 ScrollView {
                     VStack(spacing: isIPad ? AppSpacing.xxl : AppSpacing.xl) {
                         // Focus Game Section
@@ -339,11 +406,18 @@ struct PreFightSettingsSheet: View {
                     .padding(.vertical, isIPad ? AppSpacing.xl : AppSpacing.lg)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("SETTINGS")
+                        .font(.system(size: isIPad ? 14 : 12, weight: .bold, design: .serif))
+                        .foregroundStyle(Color.dojoTextSecondary)
+                        .tracking(isIPad ? 4 : 2)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .font(.system(size: isIPad ? 16 : 14, weight: .semibold))
                         .foregroundStyle(Color.emberGold)
                         .accessibilityLabel("Close settings")
                 }
@@ -538,6 +612,11 @@ struct PreFightSettingsSheet: View {
                 }
             }
             .tint(Color.calmTeal)
+            .onChange(of: soundEnabled) { _, newValue in
+                if newValue {
+                    AudioManager.shared.softTap()
+                }
+            }
             .padding(AppSpacing.md)
             .background(
                 RoundedRectangle(cornerRadius: AppCornerRadius.medium, style: .continuous)

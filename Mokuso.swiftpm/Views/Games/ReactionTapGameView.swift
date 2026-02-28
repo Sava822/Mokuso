@@ -234,6 +234,7 @@ struct InlineReactionTapGame: View {
             startInlineRound()
         case .lightsSequence, .holding:
             HapticManager.heavy()
+            AudioManager.shared.wrongBuzz()
             roundTask?.cancel()
             withAnimation(.spring(response: 0.3)) {
                 litCount = 0
@@ -243,6 +244,7 @@ struct InlineReactionTapGame: View {
             guard let start = goTime else { return }
             let ms = Int(Date().timeIntervalSince(start) * 1000)
             HapticManager.success()
+            AudioManager.shared.correctTap()
             roundCount += 1
             if bestReaction == nil || ms < (bestReaction ?? Int.max) {
                 bestReaction = ms
@@ -268,6 +270,7 @@ struct InlineReactionTapGame: View {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     HapticManager.light()
+                    AudioManager.shared.softTap()
                     withAnimation(.easeIn(duration: 0.12)) { litCount = i }
                 }
             }
@@ -557,6 +560,7 @@ struct ReactionTapGameView: View {
             startStandaloneRound()
         case .lightsSequence, .holding:
             HapticManager.heavy()
+            AudioManager.shared.wrongBuzz()
             roundTask?.cancel()
             withAnimation(.spring(response: 0.3)) {
                 litCount = 0
@@ -567,6 +571,7 @@ struct ReactionTapGameView: View {
             guard let start = goTime else { return }
             let ms = Int(Date().timeIntervalSince(start) * 1000)
             HapticManager.success()
+            AudioManager.shared.correctTap()
             roundCount += 1
             reactionTimes.append(ms)
             if bestReaction == nil || ms < (bestReaction ?? Int.max) {
@@ -595,6 +600,7 @@ struct ReactionTapGameView: View {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     HapticManager.light()
+                    AudioManager.shared.softTap()
                     withAnimation(.easeIn(duration: 0.12)) { litCount = i }
                 }
             }
@@ -658,6 +664,7 @@ struct ReactionTapGameView: View {
         roundTask?.cancel()
         timerTask?.cancel()
         HapticManager.success()
+        AudioManager.shared.successChime()
         withAnimation(.spring(duration: 0.4)) {
             gameOver = true
         }

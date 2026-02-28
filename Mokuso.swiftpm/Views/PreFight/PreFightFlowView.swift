@@ -123,8 +123,13 @@ struct PreFightFlowView: View {
     @State private var hajimeTextOpacity: Double = 0
     @State private var hajimeButtonOpacity: Double = 0
 
+    // Smooth dismiss
+    @State private var dismissOpacity: Double = 1.0
+
     // Done
     @State private var doneScale: CGFloat = 0.5
+    @State private var reflectionNote: String = ""
+    @State private var showReflection: Bool = false
 
     private var currentSettings: UserSettings {
         if let first = settings.first { return first }
@@ -202,6 +207,7 @@ struct PreFightFlowView: View {
                 .transition(.opacity)
             }
         }
+        .opacity(dismissOpacity)
         .preferredColorScheme(.dark)
         .statusBarHidden()
         .task {
@@ -893,7 +899,12 @@ struct PreFightFlowView: View {
                     Button {
                         HapticManager.heavy()
                         recordCompletion()
-                        dismiss()
+                        withAnimation(.easeOut(duration: 0.4)) {
+                            dismissOpacity = 0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                            dismiss()
+                        }
                     } label: {
                         Text("I'm Ready")
                             .font(.system(size: isIPad ? 22 : 18, weight: .bold, design: .serif))
@@ -977,7 +988,7 @@ struct PreFightFlowView: View {
                             .shadow(color: stageColor.opacity(intensity * 0.5), radius: intensity * 10)
                             .opacity(rampTextOpacity)
                             .padding(.horizontal, isIPad ? AppSpacing.xxl : AppSpacing.lg)
-                            .frame(height: isIPad ? 200 : 150, alignment: .center)
+                            .frame(height: isIPad ? 180 : 130, alignment: .center)
                             .accessibilityLabel(currentStage.text)
 
                         Spacer().frame(height: isIPad ? 48 : 32)
@@ -1158,62 +1169,135 @@ struct PreFightFlowView: View {
 
     private var doneView: some View {
         VStack(spacing: AppSpacing.lg) {
-            ZStack {
-                // Triple rings
-                Circle()
-                    .stroke(
-                        LinearGradient(colors: [.softGreen, .calmTeal], startPoint: .top, endPoint: .bottom),
-                        lineWidth: isIPad ? 3 : 2
-                    )
-                    .frame(width: isIPad ? 260 : 180, height: isIPad ? 260 : 180)
+            if !showReflection {
+                ZStack {
+                    // Triple rings
+                    Circle()
+                        .stroke(
+                            LinearGradient(colors: [.softGreen, .calmTeal], startPoint: .top, endPoint: .bottom),
+                            lineWidth: isIPad ? 3 : 2
+                        )
+                        .frame(width: isIPad ? 260 : 180, height: isIPad ? 260 : 180)
 
-                Circle()
-                    .stroke(Color.softGreen.opacity(0.3), lineWidth: isIPad ? 2 : 1.5)
-                    .frame(width: isIPad ? 220 : 150, height: isIPad ? 220 : 150)
+                    Circle()
+                        .stroke(Color.softGreen.opacity(0.3), lineWidth: isIPad ? 2 : 1.5)
+                        .frame(width: isIPad ? 220 : 150, height: isIPad ? 220 : 150)
 
-                Circle()
-                    .stroke(Color.softGreen.opacity(0.15), lineWidth: isIPad ? 1.5 : 1)
-                    .frame(width: isIPad ? 200 : 140, height: isIPad ? 200 : 140)
+                    Circle()
+                        .stroke(Color.softGreen.opacity(0.15), lineWidth: isIPad ? 1.5 : 1)
+                        .frame(width: isIPad ? 200 : 140, height: isIPad ? 200 : 140)
 
-                Image(systemName: "checkmark")
-                    .font(.system(size: isIPad ? 90 : 64, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(colors: [.softGreen, .calmTeal], startPoint: .top, endPoint: .bottom)
-                    )
+                    Image(systemName: "checkmark")
+                        .font(.system(size: isIPad ? 90 : 64, weight: .bold))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.softGreen, .calmTeal], startPoint: .top, endPoint: .bottom)
+                        )
+                }
+                .appGlow(.softGreen, radius: isIPad ? 45 : 30)
+                .scaleEffect(doneScale)
+
+                Text("You're Ready")
+                    .font(.dojoTitle(isIPad ? 44 : 32))
+                    .foregroundStyle(Color.dojoTextPrimary)
+
+                Text("Mind clear. Body sharp. Go fight.")
+                    .font(.dojoBody(isIPad ? 20 : 16))
+                    .foregroundStyle(Color.dojoTextSecondary)
+
+                Button {
+                    HapticManager.light()
+                    withAnimation(.spring(duration: 0.4)) {
+                        showReflection = true
+                    }
+                } label: {
+                    HStack(spacing: AppSpacing.sm) {
+                        Image(systemName: "pencil.line")
+                        Text("Add Reflection")
+                    }
+                    .font(.dojoCaption(isIPad ? 16 : 14))
+                    .foregroundStyle(Color.dojoTextSecondary)
+                    .padding(.horizontal, isIPad ? AppSpacing.xl : AppSpacing.lg)
+                    .padding(.vertical, isIPad ? AppSpacing.md : AppSpacing.sm)
+                    .background(Color.white.opacity(0.06), in: Capsule())
+                }
+                .accessibilityLabel("Add a reflection note")
+
+                Button {
+                    HapticManager.medium()
+                    recordCompletion()
+                    dismiss()
+                } label: {
+                    Text("Let's Go")
+                        .font(.dojoHeading(isIPad ? 22 : 18))
+                        .foregroundStyle(Color.dojoBlack)
+                        .frame(maxWidth: isIPad ? 400 : .infinity)
+                        .padding(.vertical, isIPad ? AppSpacing.lg : AppSpacing.md)
+                        .background(
+                            LinearGradient(
+                                colors: [.softGreen, .calmTeal],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: AppCornerRadius.large, style: .continuous)
+                        )
+                }
+                .padding(.horizontal, AppSpacing.xl)
+                .accessibilityLabel("Let's go")
+                .accessibilityHint("Closes the pre-fight routine")
+            } else {
+                // Reflection input
+                VStack(spacing: isIPad ? AppSpacing.xl : AppSpacing.lg) {
+                    Image(systemName: "pencil.line")
+                        .font(.system(size: isIPad ? 40 : 30))
+                        .foregroundStyle(Color.calmTeal)
+
+                    Text("Quick Reflection")
+                        .font(.dojoHeading(isIPad ? 26 : 20))
+                        .foregroundStyle(Color.dojoTextPrimary)
+
+                    Text("How do you feel right now?")
+                        .font(.dojoBody(isIPad ? 16 : 14))
+                        .foregroundStyle(Color.dojoTextTertiary)
+
+                    TextField("e.g. Focused, ready to compete...", text: $reflectionNote, axis: .vertical)
+                        .font(.dojoBody(isIPad ? 16 : 14))
+                        .foregroundStyle(Color.dojoTextPrimary)
+                        .lineLimit(3...6)
+                        .padding(isIPad ? AppSpacing.lg : AppSpacing.md)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppCornerRadius.medium, style: .continuous)
+                                .fill(Color.dojoSurface)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppCornerRadius.medium, style: .continuous)
+                                .stroke(Color.calmTeal.opacity(0.3), lineWidth: 1)
+                        )
+                        .frame(maxWidth: isIPad ? 500 : .infinity)
+
+                    Button {
+                        HapticManager.medium()
+                        recordCompletion()
+                        dismiss()
+                    } label: {
+                        Text(reflectionNote.isEmpty ? "Skip & Go" : "Save & Go")
+                            .font(.dojoHeading(isIPad ? 22 : 18))
+                            .foregroundStyle(Color.dojoBlack)
+                            .frame(maxWidth: isIPad ? 400 : .infinity)
+                            .padding(.vertical, isIPad ? AppSpacing.lg : AppSpacing.md)
+                            .background(
+                                LinearGradient(
+                                    colors: [.softGreen, .calmTeal],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                in: RoundedRectangle(cornerRadius: AppCornerRadius.large, style: .continuous)
+                            )
+                    }
+                    .padding(.horizontal, AppSpacing.xl)
+                    .accessibilityLabel(reflectionNote.isEmpty ? "Skip and go" : "Save reflection and go")
+                }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
-            .appGlow(.softGreen, radius: isIPad ? 45 : 30)
-            .scaleEffect(doneScale)
-
-            Text("You're Ready")
-                .font(.dojoTitle(isIPad ? 44 : 32))
-                .foregroundStyle(Color.dojoTextPrimary)
-
-            Text("Mind clear. Body sharp. Go fight.")
-                .font(.dojoBody(isIPad ? 20 : 16))
-                .foregroundStyle(Color.dojoTextSecondary)
-
-            Button {
-                HapticManager.medium()
-                recordCompletion()
-                dismiss()
-            } label: {
-                Text("Let's Go")
-                    .font(.dojoHeading(isIPad ? 22 : 18))
-                    .foregroundStyle(Color.dojoBlack)
-                    .frame(maxWidth: isIPad ? 400 : .infinity)
-                    .padding(.vertical, isIPad ? AppSpacing.lg : AppSpacing.md)
-                    .background(
-                        LinearGradient(
-                            colors: [.softGreen, .calmTeal],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: AppCornerRadius.large, style: .continuous)
-                    )
-            }
-            .padding(.horizontal, AppSpacing.xl)
-            .accessibilityLabel("Let's go")
-            .accessibilityHint("Closes the pre-fight routine")
         }
     }
 
@@ -1365,8 +1449,7 @@ struct PreFightFlowView: View {
             }
             HapticManager.light()
             AudioManager.shared.countdownTick()
-            // "3" is already visible from intro transition, so show it shorter
-            let delay: Double = (i == 3) ? 0.45 : 1.0
+            let delay: Double = 1.0
             try? await Task.sleep(for: .seconds(delay))
         }
         guard !Task.isCancelled else { return }
@@ -1378,6 +1461,7 @@ struct PreFightFlowView: View {
     // MARK: - Breathing (3 cycles × 4 phases × 4 seconds = 48s)
 
     private func runBreathing() async {
+        AudioManager.shared.phaseBell()
         let phases: [BreathPhase] = [.inhale, .holdIn, .exhale, .holdOut]
         let phaseDuration = 4
         let totalCycles = 3
@@ -1480,7 +1564,7 @@ struct PreFightFlowView: View {
 
         // Step 1: Icon scales in with spring + ring pulses outward
         HapticManager.medium()
-        AudioManager.shared.transitionChime()
+        AudioManager.shared.softTap()
         await MainActor.run {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 transIconScale = 1.0
@@ -1540,6 +1624,7 @@ struct PreFightFlowView: View {
     // MARK: - Focus (55s, F1 Reaction Tap only)
 
     private func runFocus() async {
+        AudioManager.shared.phaseBell()
         focusTimeRemaining = 40
 
         while focusTimeRemaining > 0 {
@@ -1559,6 +1644,7 @@ struct PreFightFlowView: View {
     // MARK: - Activate (Interactive Press-and-Hold)
 
     private func runActivate() async {
+        AudioManager.shared.phaseBell()
         let stages = OfflineContent.intensityRampStages
         let tickInterval: Double = 0.05
         var overallElapsed: Double = 0
@@ -1634,6 +1720,9 @@ struct PreFightFlowView: View {
 
             // Stage complete — satisfying burst
             HapticManager.rigid()
+            if index < stages.count - 1 {
+                AudioManager.shared.stageAdvance()
+            }
 
             // Fade out text before next stage (except last)
             if index < stages.count - 1 {
@@ -1670,10 +1759,11 @@ struct PreFightFlowView: View {
     // MARK: - Record Completion
 
     private func recordCompletion() {
+        let notes = reflectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
         let log = ActivityLog(
             routineType: .preFight,
             durationMinutes: 3,
-            notes: "Pre-Fight Flow",
+            notes: notes.isEmpty ? "Pre-Fight Flow" : notes,
             date: Date()
         )
         modelContext.insert(log)

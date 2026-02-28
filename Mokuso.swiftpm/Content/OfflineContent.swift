@@ -13,33 +13,45 @@ enum OfflineContent {
 
     static let intensityRampStages: [IntensityRampStage] = [
         IntensityRampStage(
-            text: "Close your eyes.\nYou're walking toward the tatami.\nThe mat is firm under your feet.",
-            intensity: 0.15,
+            text: "Read every word in your mind.\nSee it. Feel it.\nLet the picture build inside you.",
+            intensity: 0.10,
             duration: 6.0,
             colorName: "calmTeal"
         ),
         IntensityRampStage(
-            text: "You step onto the mat.\nYou bow.\nEverything goes silent.",
-            intensity: 0.35,
+            text: "You are walking toward the tatami.\nThe mat is firm under your feet.\nThe crowd fades. Only you remain.",
+            intensity: 0.20,
             duration: 6.0,
             colorName: "calmTeal"
         ),
         IntensityRampStage(
-            text: "You face your opponent.\nKumikita begins.\nLeft lapel. Right sleeve.\nYour grip locks in.",
+            text: "You step onto the mat.\nYou bow.\nHajime.\nEverything goes silent.",
+            intensity: 0.40,
+            duration: 6.0,
+            colorName: "focusIndigo"
+        ),
+        IntensityRampStage(
+            text: "Kumikata.\nYou grip the lapel. You grip the sleeve.\nYour hands lock in.\nYou start moving your opponent\nwhere you want him.",
             intensity: 0.55,
             duration: 7.0,
             colorName: "focusIndigo"
         ),
         IntensityRampStage(
-            text: "See your throw.\nFeel the entry, the pull, the rotation.\nYour body knows every step.",
-            intensity: 0.8,
+            text: "You feel the moment.\nYou set your throw — the one you drilled\na thousand times.\nEntry. Pull. Rotation.\nYour body knows every step.",
+            intensity: 0.75,
             duration: 7.0,
             colorName: "emberGold"
         ),
         IntensityRampStage(
-            text: "You are ready to explode.",
+            text: "The throw lands.\nYou follow straight to the ground.\nTransition. Control. No hesitation.",
+            intensity: 0.88,
+            duration: 6.0,
+            colorName: "emberGold"
+        ),
+        IntensityRampStage(
+            text: "Fight hard, but with respect.\nDon't let your win slip away.\nFight until the very end.\nNever give up.",
             intensity: 0.95,
-            duration: 4.0,
+            duration: 5.0,
             colorName: "crimsonPulse"
         )
     ]
@@ -75,34 +87,34 @@ enum OfflineContent {
         PhaseExplanation(
             phase: 1,
             title: "Breathe & Settle",
-            duration: "~60 seconds",
+            duration: "~60 sec",
             accentColorName: "calmTeal",
             icon: "wind",
-            why: "Box breathing (4-4-4-4) activates your parasympathetic nervous system — the body's built-in calm-down mechanism. It directly counteracts cortisol, lowers your heart rate, and releases muscle tension. Navy SEALs use this exact technique before high-stress operations.",
-            scienceRef: "Zaccaro et al. (2018) — \"How Breath-Control Can Change Your Life\" — Frontiers in Human Neuroscience",
-            athleteTip: "Your heart is supposed to pound before a fight. Breathing doesn't stop it — it puts YOU in control of it."
+            why: "Box breathing (4-4-4-4) lowers your heart rate, releases muscle tension, and puts your nervous system back under your control. Used by Navy SEALs before high-stress operations.",
+            scienceRef: "Parasympathetic nervous system activation",
+            athleteTip: "Your heart should pound before a fight. Breathing puts YOU in control of it."
         ),
         PhaseExplanation(
             phase: 2,
             title: "Sharpen & Focus",
-            duration: "~60 seconds",
+            duration: "~60 sec",
             accentColorName: "focusIndigo",
             icon: "brain.head.profile",
-            why: "When your brain is fully occupied solving a puzzle, it physically cannot spiral into fear or self-doubt. This is called an \"attention reset\" — sport psychologists use cognitive tasks to break rumination cycles and redirect mental energy toward the present moment.",
-            scienceRef: "Nideffer (1976) — Attentional Focus Theory — widely applied in sport psychology",
-            athleteTip: "Think of it like a mental warm-up. You wouldn't fight with cold muscles — don't fight with a scattered mind either."
+            why: "A busy brain can't spiral into fear. A cognitive game forces a mental reset — breaking overthinking and redirecting your focus to the present moment.",
+            scienceRef: "Attentional Focus Theory — sport psychology",
+            athleteTip: "Don't fight with a scattered mind. Warm it up like you warm up your body."
         ),
         PhaseExplanation(
             phase: 3,
             title: "Activate",
-            duration: "~60 seconds",
+            duration: "~60 sec",
             accentColorName: "crimsonPulse",
             icon: "flame",
-            why: "Visualization primes your motor cortex — the same neural pathways fire whether you throw a technique or vividly imagine throwing one. Research shows mental rehearsal can improve performance by 13–35%. Motivational priming builds optimal arousal — the sweet spot between too calm and too anxious.",
-            scienceRef: "Feltz & Landers (1983) — Meta-analysis of mental practice effects on motor skill performance",
-            athleteTip: "The more sensory detail you add — the feel of the gi, the sound of the mat — the stronger the neural rehearsal."
+            why: "When you vividly picture a throw, the same neural pathways fire as when you actually do it. Mental rehearsal can improve performance by 13–35%.",
+            scienceRef: "Motor cortex priming — mental practice research",
+            athleteTip: "The more detail you feel — the gi, the mat, the grip — the stronger the effect."
         )
     ]
 
-    static let formulaSummary = "Calm body → Clear mind → Prime actions.\n\nThe order matters. You can't focus if your body is in fight-or-flight mode. You can't visualize if your mind is scattered. Each phase enables the next, building you toward a state of total readiness in just 3 minutes."
+    static let formulaSummary = "Calm body → Clear mind → Prime actions.\n\nThe order matters. Each phase enables the next, building total readiness in 3 minutes."
 }

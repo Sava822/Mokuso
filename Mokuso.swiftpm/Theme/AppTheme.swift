@@ -272,13 +272,17 @@ struct ShimmerModifier: ViewModifier {
     @State private var phase: CGFloat = 0
 
     func body(content: Content) -> some View {
+        let s1 = max(0, min(1, phase - 0.15))
+        let s2 = max(s1, min(1, phase))
+        let s3 = max(s2, min(1, phase + 0.15))
+
         content
             .overlay(
                 LinearGradient(
                     stops: [
-                        .init(color: .clear, location: max(0, phase - 0.15)),
-                        .init(color: color.opacity(0.35), location: phase),
-                        .init(color: .clear, location: min(1, phase + 0.15))
+                        .init(color: .clear, location: s1),
+                        .init(color: color.opacity(0.35), location: s2),
+                        .init(color: .clear, location: s3)
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
